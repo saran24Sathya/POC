@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  n8n:
+    build: .
+    ports:
+      - "5678:5678"
+    volumes:
+      - "C:/project/FitXP_Main:/workspace"
+      - n8n_data:/home/node/.n8n
+      - ./training_data.jsonl:/workspace/training_data.jsonl
+      - ./Modelfile:/workspace/Modelfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin123
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - VID=Showen
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    network_mode: "bridge"
+
+  ollama-trainer:
+    image: ollama/ollama
+    volumes:
+      - ./training_data.jsonl:/app/training_data.jsonl
+      - ./Modelfile:/app/Modelfile
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    command: >
+      bash -c "
+        ollama serve &
+        sleep 10 &&
+        ollama create my-repo-gpt -f /app/Modelfile &&
+        echo 'Model created successfully!'
+      "
+
+volumes:
+  n8n_data:
